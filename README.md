@@ -1,6 +1,6 @@
 **git-hooks** - A tool to manage project, user, and global Git hooks for multiple git repositories.
 
-git-hooks lets hooks be installed inside git repositories, users home directory, and globally.  
+git-hooks lets hooks be installed inside git repositories, users home directory, and globally.
 When a hook is called by `git`, git-hooks will check each of these locations for the hooks to run.
 
 
@@ -47,7 +47,7 @@ Locations
 git-hooks provide a way to manage and share your hooks using three locations:
 
  - **User hooks**, installed in `~/.git_hooks/`
- - **Project hooks**, installed in `.git/git_hooks/` in a project.
+ - **Project hooks**, installed in `.git/git_hooks/`, `git_hooks/` or `.githooks/` in a project.
  - **Global hooks**, specified with the `hooks.global` configuration option.
 
 The `contrib/` directory includes a number of useful hooks, and can be set by doing the following:
@@ -64,7 +64,7 @@ To keep things organized, git-hooks looks for scripts in **sub-directories** nam
 
 	   git_hooks/pre-commit/bsd
 
-When `git hooks` is run without arguments, it lists all hooks installed on your system.  It will run the hooks with the `--about` argument to generate the description shown.  
+When `git hooks` is run without arguments, it lists all hooks installed on your system.  It will run the hooks with the `--about` argument to generate the description shown.
 
 Check out the hooks in `contrib/` for some examples.
 
