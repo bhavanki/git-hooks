@@ -86,3 +86,18 @@ Creating hooks
 To keep things organized, git-hooks looks for scripts in **sub-directories** named after the git hook name.  For example, this project has the following `pre-commit` script in the following location:
 
 	   git_hooks/pre-commit/bsd
+
+
+Using hooks
+===========
+
+To use a hook script, you can copy or symlink the script into the appropriate git-hooks
+subdirectory. You can use `git hooks --link` to easily symlink an existing script. For example, if
+you have the hook for adding change IDs to commit messages for Gerrit in your ~/bin directory, you
+can run this to symlink it as ~/.git/git_hooks/commit-msg/change-id.
+
+    git hook --link commit-msg ~/bin/git-commit-msg-change-id change-id
+
+To get rid of the symlink, you can use `git hooks -unlink`.
+
+    git hook --unlink commit-msg change-id
