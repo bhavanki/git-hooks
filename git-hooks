@@ -58,11 +58,15 @@ function list_hooks_in_dir
     fi
 }
 
+function is_hooks_installed
+{
+    GITDIR="$(git rev-parse --git-dir)"
+    [ -f "${GITDIR}/hooks/pre-commit" ] && grep -q 'git-hooks' "${GITDIR}/hooks/pre-commit" 2> /dev/null
+}
+
 function list_hooks
 {
-    GITDIR=$(git rev-parse --git-dir)
-    grep -q 'git-hooks' "${GITDIR}/hooks/pre-commit" 2> /dev/null
-    if [ $? = 0 ] ; then
+    if is_hooks_installed; then
         echo "Git hooks ARE installed in this repository."
         echo ""
     else
@@ -120,6 +124,8 @@ function run_hook
     set +e
 }
 
+hook_dir_names=(applypatch-msg commit-msg post-applypatch post-checkout post-commit post-merge post-receive pre-applypatch pre-auto-gc pre-commit prepare-commit-msg pre-rebase pre-receive update pre-push)
+
 function install_hooks_into
 {
     DIR=$1
@@ -130,7 +136,7 @@ function install_hooks_into
     set +e
     mkdir hooks
     cd hooks
-    for file in applypatch-msg commit-msg post-applypatch post-checkout post-commit post-merge post-receive pre-applypatch pre-auto-gc pre-commit prepare-commit-msg pre-rebase pre-receive update pre-push
+    for file in "${hook_dir_names[@]}"
     do
         echo "${2}" > "${file}"
         chmod +x "${file}"
@@ -195,6 +201,82 @@ function report_error
 
 }
 
+function link_hook_script
+{
+    if ! is_hooks_installed; then
+        echo "Git hooks are NOT installed in this repository. (Run 'git hooks --install' to install it)"
+        exit 1
+    fi
+
+    GITDIR="$(git rev-parse --git-dir)"
+    local cmd="$1"
+    if [ -z "${cmd}" ] || [ ! -f "${GITDIR}/hooks/${cmd}" ]; then
+        echo "link requires a valid hook command; choices are:"
+        for d in "${hook_dir_names[@]}"; do
+            echo "$d"
+        done
+        return 1
+    fi
+
+    local hook_script_path="$2"
+    if [ -z "${hook_script_path}" ]; then
+        echo "link requires a hook script path for its second argument"
+        return 1
+    fi
+    if [ ! -x "${hook_script_path}" ] ; then
+        echo "The script ${hook_script_path} was not found, or is not executable"
+        return 1
+    fi
+
+    local script_name="$3"
+    if [ -z "${script_name}" ]; then
+        script_name="$(basename "${hook_script_path}")"
+    fi
+
+    local hook_dir="${GITDIR}/git_hooks/${cmd}"
+    mkdir -p "${hook_dir}"
+    ln -s "${hook_script_path}" "${hook_dir}/${script_name}"
+    echo "Linked ${hook_script_path} into this repository as a ${cmd} hook"
+}
+
+function unlink_hook_script
+{
+    if ! is_hooks_installed; then
+        echo "Git hooks are NOT installed in this repository. (Run 'git hooks --install' to install it)"
+        exit 1
+    fi
+
+    GITDIR="$(git rev-parse --git-dir)"
+    local cmd="$1"
+    if [ -z "${cmd}" ] || [ ! -f "${GITDIR}/hooks/${cmd}" ]; then
+        echo "unlink requires a valid hook command; choices are:"
+        for d in "${hook_dir_names[@]}"; do
+            echo "$d"
+        done
+        return 1
+    fi
+
+    local script_name="$2"
+    if [ -z "${script_name}" ]; then
+        echo "link requires a hook script name for its second argument"
+        return 1
+    fi
+
+    local hook_dir="${GITDIR}/git_hooks/${cmd}"
+    if [[ "$(test -L . 2>/dev/null)" =~ expected ]]; then
+        test -h "${hook_dir}/${script_name}"
+    else
+        test -L "${hook_dir}/${script_name}"
+    fi
+    if [ $? -ne 0 ] ; then
+        echo "The script ${script_name} is not linked as a ${cmd} hook"
+        return 1
+    fi
+
+    rm -f "${hook_dir}/${script_name}"
+    echo "Unlinked ${script_name} from repository as a ${cmd} hook"
+}
+
 case $1 in
     run )
         # shellcheck disable=SC2153
@@ -214,6 +296,14 @@ case $1 in
     --uninstall-global|--uninstallglobal )
         uninstall_global
         ;;
+    --link )
+        shift
+        link_hook_script "$@"
+        ;;
+    --unlink )
+        shift
+        unlink_hook_script "$@"
+        ;;
     -h|--help|-? )
         echo 'Git Hooks'
         echo '    A tool to manage project, user, and global Git hooks for multiple git repositories.'
@@ -230,6 +320,12 @@ case $1 in
         echo '                   to install git-hooks.'
         echo '    --uninstall-global'
         echo '                   Turn off the global .git directory template that has the reminder.'
+        echo '    --link <cmd> <path> [<name>]'
+        echo '                   Symlink hook script at <path> as hook named <name> (default same'
+        echo '                   name as script) for <cmd> (such as pre-commit) into this repository'
+        echo '    --unlink <cmd> <name>'
+        echo '                   Remove hook script named <name> for <cmd> (such as pre-commit) in'
+        echo '                   this repository'
         echo "    run <cmd>      Run the hooks for <cmd> (such as pre-commit)"
         echo "    (no arguments) Show currently installed hooks"
         ;;
