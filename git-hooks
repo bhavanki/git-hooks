@@ -36,14 +36,14 @@ function hook_dirs
     echo "${HOME}/.git_hooks${hook}"
     git rev-parse --git-dir &> /dev/null
     if [ $? -eq 0 ]; then
-    if [ $(git rev-parse --is-bare-repository) = 'false' ]; then
-        cd $(git rev-parse --show-toplevel)
-        echo "${PWD}/git_hooks${hook}"
-        echo "${PWD}/.githooks${hook}"
-        echo "${PWD}/.git/git_hooks${hook}"
+        if [ "$(git rev-parse --is-bare-repository)" = 'false' ]; then
+            cd "$(git rev-parse --show-toplevel)"
+            echo "${PWD}/git_hooks${hook}"
+            echo "${PWD}/.githooks${hook}"
+            echo "${PWD}/.git/git_hooks${hook}"
+        fi
     fi
-    fi
-    eval echo "`git config hooks.global`"${hook}
+    eval echo "$(git config hooks.global)"${hook}
 }
 
 function list_hooks_in_dir
@@ -52,16 +52,16 @@ function list_hooks_in_dir
     level="${2}"
     find --help 2>&1 | grep -- '-L' 2>/dev/null >/dev/null
     if [ $? -eq 1 ] ; then
-        find "${path}/" -mindepth ${level} -maxdepth ${level} -perm +111 -type f 2>/dev/null | grep -v "^.$" | sort
+        find "${path}/" -mindepth "${level}" -maxdepth "${level}" -perm +111 -type f 2>/dev/null | grep -v "^.$" | sort
     else
-        find -L "${path}/" -mindepth ${level} -maxdepth ${level} -perm +111 -type f 2>/dev/null | grep -v "^.$" | sort
+        find -L "${path}/" -mindepth "${level}" -maxdepth "${level}" -perm +111 -type f 2>/dev/null | grep -v "^.$" | sort
     fi
 }
 
 function list_hooks
 {
-    GITDIR=`git rev-parse --git-dir`
-    cat "${GITDIR}/hooks/pre-commit" 2> /dev/null | grep 'git-hooks' > /dev/null 2> /dev/null
+    GITDIR=$(git rev-parse --git-dir)
+    grep -q 'git-hooks' "${GITDIR}/hooks/pre-commit" 2> /dev/null
     if [ $? = 0 ] ; then
         echo "Git hooks ARE installed in this repository."
         echo ""
@@ -72,11 +72,11 @@ function list_hooks
 
     echo 'Listing User, Project, and Global hooks:'
     echo '---'
-    for dir in `hook_dirs`; do
+    for dir in $(hook_dirs); do
         echo "${dir}:"
-        for hook in `list_hooks_in_dir "${dir}" 2` ; do
-            echo -n `basename \`dirname "${hook}"\``
-            echo -e "/`basename "${hook}"` \t- `${hook} --about`"
+        for hook in $(list_hooks_in_dir "${dir}" 2) ; do
+            echo -n "$(basename "$(dirname "${hook}")")"
+            echo -e "/$(basename "${hook}") \t- $(${hook} --about)"
         done
         echo ""
     done
@@ -90,13 +90,13 @@ function run_hooks
         return 1
     fi
     shift 1
-    for hook in `list_hooks_in_dir "${dir}" 1`
+    for hook in $(list_hooks_in_dir "${dir}" 1)
     do
-        export last_run_hook="${hook} $@"
-        if [ ! -z ${GIT_HOOKS_VERBOSE} ] ; then
+        export last_run_hook="${hook} $*"
+        if [ ! -z "${GIT_HOOKS_VERBOSE}" ] ; then
             echo -n "@@ Running hook: "
-            echo -n `basename \`dirname "${hook}"\``
-            echo "/`basename "${hook}"`"
+            echo -n "$(basename "$(dirname "${hook}")")"
+            echo "/$(basename "${hook}")"
         fi
         ${hook} "$@"
     done
@@ -105,13 +105,13 @@ function run_hooks
 function run_hook
 {
     set -e
-    hook=`basename "${1}"`
-    if [ -z ${hook} ] ; then
+    hook=$(basename "${1}")
+    if [ -z "${hook}" ] ; then
         echo "run requires a hook argument"
         return 1
     fi
     shift 1
-    for dir in `hook_dirs "${hook}"`; do
+    for dir in $(hook_dirs "${hook}"); do
         if [ ! -d "${dir}" ] ; then
             continue
         fi
@@ -139,7 +139,7 @@ function install_hooks_into
 
 function install_hooks
 {
-    GITDIR=`git rev-parse --git-dir`
+    GITDIR="$(git rev-parse --git-dir)"
     if [ ! $? -eq 0 ] ; then
         echo "$1 must be run inside a git repository"
         return 1
@@ -150,6 +150,7 @@ function install_hooks
             echo "hooks.old already exists, perhaps you already installed?"
             return 1
         fi
+    # shellcheck disable=SC2016
     cmd='#!/usr/bin/env bash
 git-hooks run "$0" "$@"';
     install_hooks_into "${PWD}" "${cmd}"
@@ -163,7 +164,7 @@ git-hooks run "$0" "$@"';
     fi
 }
 
-function install_global 
+function install_global
 {
     TEMPLATE="$HOME/.git-template-with-git-hooks"
     if [ ! -d "${TEMPLATE}" ] ; then
@@ -182,12 +183,12 @@ echo \"git hooks not installed in this repository.  Run 'git hooks --install' to
     echo "Git global config init.templatedir is now set to ${TEMPLATE}"
 }
 
-function uninstall_global 
+function uninstall_global
 {
     git config --global --unset init.templatedir
 }
 
-function report_error 
+function report_error
 {
     echo "Hook failed: $last_run_hook"
     exit 1
@@ -196,6 +197,7 @@ function report_error
 
 case $1 in
     run )
+        # shellcheck disable=SC2153
         if [ ! -z "${GIT_DIR}" ] ; then
             unset GIT_DIR
         fi
