@@ -46,7 +46,7 @@ function hook_dirs
         fi
     fi
     # The global hook directory
-    eval echo "$(git config hooks.global)"${hook}
+    echo "$(git config hooks.global)${hook}"
 }
 
 # Lists (echoes) all of the hooks in a hook directory
@@ -58,17 +58,17 @@ function list_hooks_in_dir
 
     find --help 2>&1 | grep -- '-L' 2>/dev/null >/dev/null
     if [ $? -eq 1 ] ; then
-	Lopt=
+       Lopt=
     else
-	Lopt=-L
+       Lopt=-L
     fi
 
     find ${Lopt} "${path}/" \
-	 -mindepth "${level}" \
-	 -maxdepth "${level}" \
-	 \( -perm -100 -o -perm -010 -o -perm -001 \) \
-	 -type f 2>/dev/null \
-	| grep -v "^.$" | sort
+        -mindepth "${level}" \
+        -maxdepth "${level}" \
+        \( -perm -100 -o -perm -010 -o -perm -001 \) \
+        -type f 2>/dev/null \
+        | grep -v "^.$" | sort
 }
 
 # Lists all hooks.
@@ -76,7 +76,7 @@ function list_hooks
 {
     local dir_names=(User Repository Global)
     local directories
-    directories=$(hook_dirs)
+    directories=( $(hook_dirs) )
     local index=0
 
     local hook_name=
@@ -89,7 +89,7 @@ function list_hooks
     echo 'Listing User, Project, and Global hooks:'
     echo ""
 
-    for dir in $directories; do
+    for dir in "${directories[@]}"; do
         echo -e "\033[0;33m${dir_names[$index]}\033[0m - ${dir} "
         index=$((index+1))
         for hook in $(list_hooks_in_dir "${dir}" 2) ; do
@@ -118,15 +118,14 @@ function run_hooks
         return 1
     fi
     shift 1
-    for hook in $(list_hooks_in_dir "${dir}" 1)
-    do
+    for hook in $(list_hooks_in_dir "${dir}" 1); do
         export last_run_hook="${hook} $*"
         if [ -n "${GIT_HOOKS_VERBOSE}" ] ; then
             echo -n "@@ Running hook: "
             echo -n "$(basename "$(dirname "${hook}")")"
             echo "/$(basename "${hook}")"
         fi
-        ${hook} "$@"
+        "${hook}" "$@"
     done
 }
 
@@ -150,6 +149,9 @@ function run_hook
     set +e
 }
 
+# Writes delegating scripts for each kind of hook. Existing hook scripts are
+# saved off.
+# Arguments: directory to write to, script contents (same for every hook)
 function install_hooks_into
 {
     DIR=$1
@@ -167,32 +169,43 @@ function install_hooks_into
     done
 }
 
+# Writes delegating scripts into the current git repository.
 function install_hooks
 {
     GITDIR=$(git rev-parse --git-dir)
      # shellcheck disable=SC2181
-   if [ ! $? -eq 0 ] ; then
-        echo "$1 must be run inside a git repository"
+    if [ ! $? -eq 0 ] ; then
+        echo "install must be run inside a git repository"
         return 1
     fi
     cd "${GITDIR}"
-    if [ "${1}" = "--install" ] ; then
-        if [ -d hooks.old ] ; then
-            echo "hooks.old already exists, perhaps you already installed?"
-            return 1
-        fi
-     # shellcheck disable=SC2016
+    if [ -d hooks.old ] ; then
+        echo "hooks.old already exists, perhaps you already installed?"
+        return 1
+    fi
+    # shellcheck disable=SC2016
     cmd='#!/usr/bin/env bash
 git-hooks run "$0" "$@"';
     install_hooks_into "${PWD}" "${cmd}"
-    else
-        if [ ! -d hooks.old ] ; then
-            echo "Error, hooks.old doesn't exists, aborting uninstall to not destroy something"
-            return 1
-        fi
-        rm -rf hooks
-        mv hooks.old hooks
+}
+
+# Destroys delegating scripts in the current git repository, and replaces the
+# original hooks saved during installation.
+function uninstall_hooks
+{
+    GITDIR=$(git rev-parse --git-dir)
+     # shellcheck disable=SC2181
+    if [ ! $? -eq 0 ] ; then
+        echo "uninstall must be run inside a git repository"
+        return 1
     fi
+    cd "${GITDIR}"
+    if [ ! -d hooks.old ] ; then
+        echo "Error, hooks.old doesn't exists, aborting uninstall to not destroy something"
+        return 1
+    fi
+    rm -rf hooks
+    mv hooks.old hooks
 }
 
 function install_global
@@ -236,8 +249,11 @@ case $1 in
         trap report_error ERR
         run_hook "$@"
         ;;
-    --install|--uninstall )
+    --install)
         install_hooks "$1"
+        ;;
+    --uninstall )
+        uninstall_hooks "$1"
         ;;
     --install-global|--installglobal )
         install_global
