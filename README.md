@@ -84,3 +84,11 @@ Check out the hooks in `contrib/` for some examples.
 To keep things organized, git-hooks looks for scripts in **sub-directories** named after the git hook name. For example, this repository has the following `pre-commit` script in the following location:
 
 	   git_hooks/pre-commit/bsd
+
+The `link` command symlinks scripts from elsewhere into the `.githooks/` directory of a
+repository (creating the directory if needed). This lets you reuse scripts across selected
+repositories.
+
+    git-hooks link pre-commit /path/to/hookscript
+
+The `unlink` command unlinks a script.
