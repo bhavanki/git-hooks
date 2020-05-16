@@ -148,7 +148,9 @@ function run_hook
         return 1
     fi
     shift 1
-    for dirlisting in $(hook_dirs "${hook}"); do
+    local directories=()
+    while IFS='' read -r line; do directories+=("$line"); done < <(hook_dirs "${hook}")
+    for dirlisting in "${directories[@]}"; do
         local dir="${dirlisting#*:}"
         if [ ! -d "${dir}" ] ; then
             continue
