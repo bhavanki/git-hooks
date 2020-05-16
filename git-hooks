@@ -75,9 +75,9 @@ function list_hooks_in_dir
 function list_hooks
 {
     local dir_names=(User Repository Global)
-    local directories
-    directories=( $(hook_dirs) )
     local index=0
+    local directories=()
+    while IFS='' read -r line; do directories+=("$line"); done < <(hook_dirs)
 
     local hook_name=
     local last_dir=
