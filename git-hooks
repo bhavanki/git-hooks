@@ -116,13 +116,14 @@ function list_hooks
 }
 
 # Runs all of the hook scripts in a directory.
-# Arguments: hook directory
+# Arguments: hook directory, arguments for each hook script
 # Side effect: exports last_run_hook with the command line used to run the
 #   last hook script (in case of error)
 function run_hooks
 {
     dir="${1}"
     if [[ -z ${dir} || ! -d "${dir}" ]] ; then
+        # This shouldn't happen anyway
         echo "run_hooks requires a directory name as an argument."
         return 1
     fi
@@ -138,16 +139,17 @@ function run_hooks
     done
 }
 
-# Runs all of the scripts for a hook.
-# Arguments: hook
+# Runs all of the scripts for a hook. This function exits immediately if any
+# script fails.
+# Arguments: hook, arguments for each hook script
 function run_hook
 {
     set -e
-    hook=$(basename "${1}")
-    if [ -z "${hook}" ] ; then
+    if [ -z "$1" ]; then
         echo "run requires a hook argument"
         return 1
     fi
+    hook=$(basename "${1}")
     shift 1
     local directories=()
     while IFS='' read -r line; do directories+=("$line"); done < <(hook_dirs "${hook}")
@@ -251,7 +253,6 @@ function report_error
 {
     echo "Hook failed: $last_run_hook"
     exit 1
-
 }
 
 case $1 in
@@ -264,7 +265,7 @@ case $1 in
         trap report_error ERR
         run_hook "$@"
         ;;
-    --install)
+    --install )
         install_hooks "$1"
         ;;
     --uninstall )
@@ -293,8 +294,9 @@ case $1 in
         echo '                   to install git-hooks.'
         echo '    --uninstall-global'
         echo '                   Turn off the global .git directory template that has the reminder.'
-        echo "    run <cmd>      Run the hooks for <cmd> (such as pre-commit)"
-        echo "    (no arguments) Show currently installed hooks"
+        echo '    run <cmd> <args>'
+        echo '                   Run the hooks for <cmd> (such as pre-commit), each with <args>'
+        echo '    (no arguments) Show currently installed hooks'
         ;;
     * )
         list_hooks
