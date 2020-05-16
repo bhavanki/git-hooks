@@ -39,9 +39,9 @@ Hooks are powerful and useful.  Some common hooks include:
 - Verify that the code builds.
 - Verify that any new files contain a copyright with the current year in it.
 
-Hooks can be very project-specific such as:
+Hooks can be very repository-specific such as:
 
-- Verify that the project still builds
+- Verify that the repository project still builds
 - Verify that automated tests matching the modified files still pass with no errors.
 - Pre-populate the commit message with a "standard" format.
 - Verify that any new code follows a "standard" coding style.
@@ -50,7 +50,7 @@ Or very person-specific hooks, such as:
 
 - Don't allow a `push` to a remote repository after 1AM, in case I break something
   and will be asleep.
-- Don't allow a commit between 9-5 for projects in `~/personal/`, as I shouldn't be
+- Don't allow a commit between 9-5 for repositories in `~/personal/`, as I shouldn't be
   working on them during work hours.
 
 For more details about the different hooks available to you, check out:
@@ -81,6 +81,6 @@ Check out the hooks in `contrib/` for some examples.
 
 ## Creating hooks
 
-To keep things organized, git-hooks looks for scripts in **sub-directories** named after the git hook name. For example, this project has the following `pre-commit` script in the following location:
+To keep things organized, git-hooks looks for scripts in **sub-directories** named after the git hook name. For example, this repository has the following `pre-commit` script in the following location:
 
 	   git_hooks/pre-commit/bsd

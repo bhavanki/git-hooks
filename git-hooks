@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 #
+# Copyright (c) 2020, Bill Havanki <bill@havanki.com>
 # Copyright (c) 2010-2014, Benjamin C. Meyer <ben@meyerhome.net>
 # All rights reserved.
 #
@@ -41,7 +42,7 @@ function hook_dirs
     if git rev-parse --git-dir &> /dev/null; then
         if [ "$(git rev-parse --is-bare-repository)" = 'false' ]; then
             cd "$(git rev-parse --show-toplevel)"
-            # The repository (project) directories
+            # The repository directories
             echo "Repository-1:${PWD}/git_hooks${hook}"
             echo "Repository-2:${PWD}/.githooks${hook}"
         fi
@@ -87,7 +88,7 @@ function list_hooks
     local space_size=35
     local about=
 
-    echo 'Listing User, Project, and Global hooks:'
+    echo 'Listing user, repository, and global hooks:'
     echo ""
 
     for dirlisting in "${directories[@]}"; do
@@ -277,8 +278,9 @@ case $1 in
         ;;
     -h|--help|-? )
         echo 'Git Hooks'
-        echo '    A tool to manage project, user, and global Git hooks for multiple git repositories.'
-        echo '    https://github.com/icefox/git-hooks'
+        echo '    A tool to manage repository, user, and global Git hooks for multiple git repositories.'
+        echo '    https://github.com/bhavanki/git-hooks'
+        echo '    forked with gratitude from: https://github.com/icefox/git-hooks'
         echo ''
         echo 'Options:'
         echo '    --install      Replace existing hooks in this repository with a call to'
