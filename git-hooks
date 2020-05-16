@@ -204,6 +204,8 @@ function install_hooks
     cmd='#!/usr/bin/env bash
 git-hooks run "$0" "$@"';
     install_hooks_into "${PWD}" "${cmd}"
+
+    echo "git-hooks is now installed in this repository"
 }
 
 # Destroys delegating scripts in the current git repository, and replaces the
@@ -223,6 +225,8 @@ function uninstall_hooks
     fi
     rm -rf hooks
     mv hooks.old hooks
+
+    echo "git-hooks has been uninstalled from this repository"
 }
 
 function install_global
